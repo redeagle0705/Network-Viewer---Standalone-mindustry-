@@ -30,7 +30,7 @@ function graph(doc,liquid){
  function isgate(b){return FILTERS[b.b]||GATES[b.b];}
  function handles(b){return EXTRA[b.b]||b.item_role==='producer'||b.item_role==='consumer';}
  function link(b){
-  var n=b.b,r=rot(b),q,v=b.link;
+  var n=b.b,r=rot(b),q,v=b.link;if(b.link_valid===false)return null;
   if(n==='duct-bridge'||LD[n]){if(r===null)return null;for(var k=1;k<=(b.range_tiles===undefined?4:b.range_tiles);k++){q=nearby(b,r,k);if(q&&q.b===n)return q;}return null;}
   if(!Array.isArray(v)||v.length!==2||!integer(v[0])||!integer(v[1]))return null;q=bs[v.join(',')];if(!q||q.b!==n)return null;
   var dx=v[0]-b.x,dy=v[1]-b.y;
@@ -96,7 +96,7 @@ function graph(doc,liquid){
   var near={},pairs={};directions(function(d){cells(b).forEach(function(c){var q=occ[(c[0]+D[d][0])+','+(c[1]+D[d][1])];if(q&&!same(q,b))near[pos(q)]=q;});});
   Object.keys(near).forEach(function(k){var src=near[k],core=src.b.indexOf('core-')===0||src.linked_core!=null;if(n==='duct-unloader'&&(src!==nearby(b,(r+2)%4)||core))return;if(src.can_unload!==true){if(!own(src,'can_unload'))note('UNLOAD_CAPABILITY_UNKNOWN',b);return;}var ports=['out','flow','in'].map(function(p){return pid(src,p);}).filter(function(p){return !!nodes[p];});if(!ports.length)return;
    (n==='duct-unloader'?[r]:[0,1,2,3]).forEach(function(out){var t=nearby(b,out);if(!t||t===src)return;if(n==='unloader'&&(STORAGE[t.b]||t.b.indexOf('core-')===0))return;var z=accept(t,out,b);if(z)pairs[ports[0]+'>'+z]=[ports[0],z];});
-  });Object.keys(pairs).sort().forEach(function(k,i){var p='transfer'+i;add(b,p,'conditional');var c={kind:'unload',item:b.filter==null?null:b.filter,known:own(b,'filter'),requires:'source_stock_and_receiver_capacity_balance'};edge(pairs[k][0],pid(b,p),c);edge(pid(b,p),pairs[k][1],c);});
+  });Object.keys(pairs).sort().forEach(function(k,i){var p='transfer'+(doc.stable_unload_ports?k.replace(/[^a-zA-Z0-9_-]/g,'_'):i);add(b,p,'conditional');var c={kind:'unload',item:b.filter==null?null:b.filter,known:own(b,'filter'),requires:'source_stock_and_receiver_capacity_balance'};edge(pairs[k][0],pid(b,p),c);edge(pid(b,p),pairs[k][1],c);});
  }
  all.forEach(function(b){var n=b.b,r=rot(b),t=target(b);
   if(liquid){
@@ -122,7 +122,7 @@ function graph(doc,liquid){
    else if(b.item_role==='producer'){if(resource&&b.output_items!=null&&b.output_items.indexOf(resource)<0)return;directions(function(d){forward(b,'out',d,{kind:'production',items:b.output_items===undefined?null:b.output_items,requires:'recipe_and_destination_space'});});}
   }else if(BELTS[n]&&r!==null)forward(b,'flow',r,null,true);
   else if(n==='junction')directions(function(d){forward(b,String(d),d);});
-  else if(BRIDGES[n]){if(b.link===null){note('BRIDGE_TERMINAL_DUMP_CONDITIONAL',b);var blocked={};(incoming[pos(b)]||[]).forEach(function(a){if(BRIDGES[a.b])blocked[dir(b,a)]=true;});directions(function(d){if(!blocked[d])forward(b,'flow',d);});}else if(Array.isArray(b.link)&&b.link.length===2&&integer(b.link[0])&&integer(b.link[1])){if(t)edge(pid(b,'flow'),pid(t,'flow'));else note('INVALID_BRIDGE_LINK',b,{target:b.link});}else note('BRIDGE_LINK_UNKNOWN',b);}
+  else if(BRIDGES[n]){if(b.link===null||b.link_valid===false){if(b.link!==null)note('INVALID_BRIDGE_LINK',b,{target:b.link});note('BRIDGE_TERMINAL_DUMP_CONDITIONAL',b);var blocked={};(incoming[pos(b)]||[]).forEach(function(a){if(BRIDGES[a.b])blocked[dir(b,a)]=true;});directions(function(d){if(!blocked[d])forward(b,'flow',d);});}else if(Array.isArray(b.link)&&b.link.length===2&&integer(b.link[0])&&integer(b.link[1])){if(t)edge(pid(b,'flow'),pid(t,'flow'));else note('INVALID_BRIDGE_LINK',b,{target:b.link});}else note('BRIDGE_LINK_UNKNOWN',b);}
   else if(DRILLS[n]||(FACT[n]&&!NOOUT[n])||n==='router'||n==='distributor')directions(function(d){forward(b,n==='router'||n==='distributor'?'flow':'out',d);});
  });
  if(!liquid){var gates={},adj={},reached={},todo=[];Object.keys(nodes).forEach(function(i){if(FILTERS[nodes[i].block]||GATES[nodes[i].block])gates[i]=true;});Object.keys(edgeMap).forEach(function(k){var e=edgeMap[k];(adj[e[0]]||(adj[e[0]]=[])).push(e[1]);if(!gates[e[0]]&&gates[e[1]]&&!reached[e[1]]){reached[e[1]]=true;todo.push(e[1]);}});while(todo.length){var u=todo.pop();(adj[u]||[]).forEach(function(z){if(gates[z]&&!reached[z]){reached[z]=true;todo.push(z);}});}Object.keys(edgeMap).forEach(function(k){if(gates[edgeMap[k][0]]&&!reached[edgeMap[k][0]]){delete edgeMap[k];delete conditions[k];}});Object.keys(reached).forEach(function(i){if(nodes[i].port.indexOf('in')===0&&!(adj[i]||[]).length)note('BLOCKED_GATE_ROUTE',bs[nodes[i].cell.join(',')]);});}
