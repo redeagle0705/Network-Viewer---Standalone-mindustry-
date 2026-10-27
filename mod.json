@@ -4,5 +4,6 @@
   "author": "REDEagle0705",
   "version": "1.0.1",
   "minGameVersion": "160",
+  "hidden":true,
   "description": "Read-only item/liquid/power viewer.\nMade with Codex"
 }
