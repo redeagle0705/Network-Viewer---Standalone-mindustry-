@@ -2,8 +2,8 @@
   "name": "redeagle0705-network-overlay",
   "displayName": "Network Viewer - Standalone",
   "author": "REDEagle0705",
-  "version": "1.0.1",
+  "version": "1.1.2",
   "minGameVersion": "160",
-  "hidden":true,
+  "hidden": true,
   "description": "Read-only item/liquid/power viewer.\nMade with Codex"
 }
