@@ -1,4 +1,4 @@
-Network Viewer Standalone 1.0.1
+Network Viewer Standalone 1.1.3
 
 사용
 - 화면 왼쪽 아래 아이템 / 유체 / 전력 버튼을 각각 누릅니다.
